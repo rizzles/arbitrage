@@ -1,0 +1,14 @@
+{% include "modules/head.html" %}
+
+<div class="row">
+  <div class="span12">
+    <h3>Trade History</h3>
+    {% for trade in trades %}
+    <div>
+      {{trade}}
+    </div>
+    {% end %}
+  </div>
+</div>
+
+{% include "modules/tail.html" %}

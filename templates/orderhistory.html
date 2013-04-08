@@ -1,0 +1,13 @@
+{% include "modules/head.html" %}
+
+{% if orders %}
+{% for order in orders %}
+<div class="row" style="margin-top: 30px;">
+  <div class="span12">
+    {{order.pair}} - {{order.type}} - {{order.amount}} for {{order.rate}} <a href="/cancel_order?order_id={{order.order_id}}" class="btn btn-small btn-primary">Cancel</a>
+  </div>
+</div>
+{% end %}
+{% end %}
+
+{% include "modules/tail.html" %}

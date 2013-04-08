@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <title>Arb</title>
+    <link rel="stylesheet" href="{{ static_url('css/bootstrap.css') }}">
+  </head>
+
+  <body>
+
+    <div class="container">
+
+<div class="row" style="margin-top: 50px;">
+  <div class="span12">
+    
+    <form action="/login" method="POST">
+      {% raw xsrf_form_html() %}
+      <input type="text" name="uname" placeholder="Username" tabindex="1">
+      <br>
+      <input type="password" name="password" placeholder="Password" tabindex="2">
+      <br>
+      <button type="submit" class="btn" tabindex="3">Login</button>
+    </form>
+
+  </div>
+</div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{% include "modules/head.html" %}
+
+<div class="row">
+  <div class="span12">
+    {% for t in history %}
+      <div>
+	{{ t.price }} - {{ t.date }}
+      </div>
+    {% end %}
+  </div>
+</div>
+
+{% include "modules/tail.html" %}
