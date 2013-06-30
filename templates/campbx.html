@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Exchange Arb</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/static/css/bootstrap.css" rel="stylesheet" media="screen">
+    <link href="/static/css/font-awesome.css" rel="stylesheet" media="screen"> 
+    <link href="/static/css/style.css" rel="stylesheet" media="screen">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="span8 offset4">
+                Campbx last trade price
+                <div id="socket">
+                	{{price}}
+                </div>
+            </div>
+        </div>  
+    </div>  
+</body>
+
+<script src="/static/js/jquery-1.10.0.js"></script>
+<script src="/static/js/bootstrap.js"></script>
+<script>
+$(document).ready(function() {
+	console.log('ready');
+});
+</script>
+</html>
