@@ -266,7 +266,7 @@ class GraphHandler(BaseHandler):
 
 def main():
     http_server = tornado.httpserver.HTTPServer(Application(), xheaders=True)
-    http_server.listen(8888)
+    http_server.listen(80)
     tornado.ioloop.IOLoop.instance().start()
     logging.info("Web server started successfully")
 
