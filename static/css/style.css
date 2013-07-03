@@ -1,0 +1,151 @@
+body {
+	font-family: 'Open Sans', sans-serif;
+
+	font-size:16px;
+	line-height: 1.5em;
+	color: #2222222;
+}
+
+.container {
+	margin-bottom: 50px;
+	padding-top: 50px;
+}
+
+.container-color {
+	border-top: 1px solid #ddd;
+	padding-bottom: 50px;
+}
+
+.container-color > .container, .container-image > .container {
+	margin-bottom: 0;
+}
+
+.container-image {
+	border-top: 1px solid #ddd;
+	background: url(/static/images/cream_pixels.png) top left;
+	padding: 50px 0;
+}
+
+.container-outline {
+	border: 1px solid #ccc;
+	background-color: white;
+	padding-left: 15px;
+	padding-right: 15px;
+	padding-bottom: 50px;
+}
+
+.image-margin {
+	margin-bottom: 30px;
+}
+
+h1 {
+	margin-bottom: 50px;
+	font-weight: 400;
+	font-size: 50px;
+	line-height: 1.2em;
+}
+
+h2 {
+	font-weight: 400;
+	margin-top: 50px;
+	margin-bottom: 20px;
+	font-family: 'Open Sans', sans-serif;
+}
+
+h4 {
+	margin-bottom: 20px;
+	font-family: 'Open Sans', sans-serif;	
+}
+
+h3 {
+	font-family: 'Open Sans', sans-serif;	
+}
+
+h6 {
+	font-family: 'Open Sans', sans-serif;	
+	font-weight: 400;
+}
+
+.alert {
+	font-family: 'Open Sans', sans-serif;
+	width: 200px;
+}
+p {
+	color: #999;
+}
+
+.huge {
+	font-size: 100px;
+}
+
+.gray {
+	color: #999;
+}
+
+.green {
+	color: #519B60;
+}
+
+.slim {
+	font-family: 'Open Sans', sans-serif;
+}
+
+.line {
+	background: url('/static/images/line.png') no-repeat bottom left;
+	height: 1px;
+	margin-bottom: 10px;
+	margin-left: 0;
+	float: none;
+}
+
+.box {
+	background-color: #519B60;
+	color: white;
+}
+
+.box-header {
+	border-bottom: 1px solid white;
+	padding: 20px 20px 10px 20px;
+}
+
+.box-header h6 {
+	margin-bottom: 0;
+}
+
+.box-header h3 {
+	margin-top: 0;
+}
+
+.box-body {
+	padding: 30px;
+}
+
+.box-body p {
+	color: white;
+}
+
+.numbers {
+	margin-left: 0;
+	font-family: 'Open Sans', sans-serif;
+	font-size: 50px;
+	color: #519B60;
+	line-height: 0.9em;
+	margin-right: 10px;
+}
+
+.coinbaserose {
+	width: 30px;
+	height: 4px;
+	margin-bottom: 3px;
+	background-color: rgba(151,187,205,1);
+	display: inline-block;
+}
+
+.campbxrose {
+	width: 30px;
+	height: 4px;
+	margin-bottom: 3px;
+	background-color: rgba(220,220,220,1);
+	display: inline-block;
+}
+

@@ -4,100 +4,361 @@
     <meta charset="utf-8">
     <title>Exchange Arb</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/static/css/bootstrap.css" rel="stylesheet" media="screen">
-    <link href="/static/css/font-awesome.css" rel="stylesheet" media="screen"> 
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" media="screen"> 
     <link href="/static/css/style.css" rel="stylesheet" media="screen">
 </head>
 
 <body>
-    <div class="container">
-        <div class="row">
-            <div class="span12">
-                <h1><i class="icon-btc"></i> Exchange Arbitrage</h1>
+    <div class="container-image">
+        <div class="container-outline container">
+            <div class="row">
+                <div class="span12">
+                    <h1><i class="icon-btc"></i> Current Exchange Prices</h1>
+                </div>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="span4">
-                <h4>Campbx last trade price</h4>
-                <div class="line span1"></div>
-                <div id="campbxsocket">
-                    $0.00
-                </div>
-            </div>
-            <div class="span4">
-                <h4>Coinbase buy price <small>(includes 1% fee)</small></h4>
-                <div class="line span1"></div>
-                <div id="coinbasesocket">
-                    $0.00
-                </div>
-            </div>
-            <div class="span4">
-                <div class="box">
-                    <div class="box-header">
-                        <h6>ARBITRAGE</h6>
-                        <h3>Price Difference</h3>
+            <div class="row">
+                <div class="span4">
+                    <h4>Campbx last trade price</h4>
+                    <div class="line span1"></div>
+                    <div id="campbxsocket">
+                        $0.00
                     </div>
-                    <div class="box-body">
-                        <div id="diff">
-                            <h3>$0.00</h3>
+                </div>
+                <div class="span4">
+                    <h4>Coinbase buy price <small>(includes 1% fee)</small></h4>
+                    <div class="line span1"></div>
+                    <div id="coinbasesocket">
+                        $0.00
+                    </div>
+                </div>
+                <div class="span4">
+                    <div class="box">
+                        <div class="box-header">
+                            <h6>ARBITRAGE</h6>
+                            <h3>Price Difference</h3>
                         </div>
+                        <div class="box-body">
+                            <div id="diff">
+                                <h3>$0.00</h3>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>  
 
-    <div class="container">
-        <div class="row">
-            <div class="span12">
-                <a href="/" class="button">Execute Trade</a>
+    <div class="container-color" style="background-color:#4b4b4b;color:white;">
+        <div class="container">
+            <div class="row">
+                <div class="span12">
+                    <h1>Historical Prices</h1>
+                    <div class="line"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="span12" style="margin-bottom: 10px;">
+                    <h2 style="color:#519B60">Historical price difference between exchanges</h2>
+                    <div class="btn-group">
+                        <button class="btn" id="back"><i class="icon-backward"></i></button>
+                        <button class="btn disabled" id="hourly">Hourly</button>
+                        <button class="btn" id="daily">Daily</button>
+                        <button class="btn" id="weekly">Weekly</button>
+                        <button class="btn" id="forward"><i class="icon-forward"></i></button>
+                    </div>
+                    <span class="diffloading"><i class="icon-spinner icon-spin icon-large"></i></span>
+                    <span class="alert alert-error">
+                        <button type="button" class="close" data-dismiss="alert">×</button>
+                        <strong>Error:</strong> Try again.
+                    </span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="span12">
+                    <canvas id="diffchart"></canvas>
+                </div>
+            </div>
+            <div class="row">
+
+                <div class="span12">
+                    <h2 style="color:#519B60">Historical buy price of exchanges</h2>                    
+                    <canvas id="pricechart"></canvas>
+                    <div class="coinbaserose"></div> Coinbase.com buy price<br>
+                    <div class="campbxrose"></div> Campbx.com buy price    
+                </div>
             </div>
         </div>
     </div>
+
 </body>
 
-<script src="/static/js/jquery-1.10.0.js"></script>
-<script src="/static/js/bootstrap.js"></script>
+<script src="/static/js/jquery-1.10.1.min.js"></script>
+<script src="/static/js/bootstrap.min.js"></script>
+<script src="/static/js/Chart.js"></script>
 <script>
+options = {
+    //Boolean - If we show the scale above the chart data           
+    scaleOverlay : false,
+    //Boolean - If we want to override with a hard coded scale
+    scaleOverride : false,
+    //** Required if scaleOverride is true **
+    //Number - The number of steps in a hard coded scale
+    scaleSteps : null,
+    //Number - The value jump in the hard coded scale
+    scaleStepWidth : null,
+    //Number - The scale starting value
+    scaleStartValue : null,
+    //String - Colour of the scale line 
+    scaleLineColor : "rgba(255,255,255,.1)",
+    //Number - Pixel width of the scale line    
+    scaleLineWidth : 1,
+    //Boolean - Whether to show labels on the scale 
+    scaleShowLabels : true,
+    //Interpolated JS string - can access value
+    scaleLabel : "<%=value%>",
+    //String - Scale label font declaration for the scale label
+    scaleFontFamily : "'Arial'",
+    //Number - Scale label font size in pixels  
+    scaleFontSize : 12,
+    //String - Scale label font weight style    
+    scaleFontStyle : "normal",
+    //String - Scale label font colour  
+    scaleFontColor : "#ccc",    
+    ///Boolean - Whether grid lines are shown across the chart
+    scaleShowGridLines : true,
+    //String - Colour of the grid lines
+    scaleGridLineColor : "rgba(255,255,255,.1)",
+    //Number - Width of the grid lines
+    scaleGridLineWidth : 1, 
+    //Boolean - Whether the line is curved between points
+    bezierCurve : false,
+    //Boolean - Whether to show a dot for each point
+    pointDot : true,
+    //Number - Radius of each point dot in pixels
+    pointDotRadius : 3,
+    //Number - Pixel width of point dot stroke
+    pointDotStrokeWidth : 1,
+    //Boolean - Whether to show a stroke for datasets
+    datasetStroke : true,
+    //Number - Pixel width of dataset stroke
+    datasetStrokeWidth : 2,
+    //Boolean - Whether to fill the dataset with a colour
+    datasetFill : true,
+    //Boolean - Whether to animate the chart
+    animation : true,
+    //Number - Number of animation steps
+    animationSteps : 60,
+    //String - Animation easing effect
+    animationEasing : "easeOutQuart",
+    //Function - Fires when the animation is complete
+    onAnimationComplete : null
+}
+
+var ctx = $("#diffchart").get(0).getContext("2d");
+var pricectx = $("#pricechart").get(0).getContext("2d");
+var amount = 0;
+var width = $(document).width();
+if (width > 1200) {
+    ctx.canvas.width = 1170;
+    ctx.canvas.height = 600;
+    pricectx.canvas.width = 1170;
+    pricectx.canvas.height = 600;
+}
+else if (width > 980) {
+    ctx.canvas.width = 940;
+    ctx.canvas.height = 500;
+    pricectx.width = 940;
+    pricectx.height = 500;
+}
+else if (width > 768) {
+    ctx.canvas.width = 724;
+    ctx.canvas.height = 400;        
+    pricectx.canvas.width = 724;
+    pricectx.canvas.height = 400;
+}
+else {
+    ctx.canvas.width = width-50;
+    ctx.canvas.height = 400;        
+    pricectx.canvas.width = width-50;
+    pricectx.canvas.height = 400;
+}
+var chart = new Chart(ctx); 
+var pricechart = new Chart(pricectx);   
+
+function hourly() {
+    console.log(amount);
+    $.ajax({
+        url: "/graph_data",
+        type: "GET",
+        cache: false,
+        timeout: 2000,
+        dataType: "json",
+        data : {"amount": amount, 'unittime':'hourly'},
+        beforeSend: function(e) {
+            $("button").attr("disabled","disabled");
+            $("#hourly").addClass("disabled");
+            $("#daily").removeClass("disabled");
+            $("#weekly").removeClass("disabled");
+            $(".diffloading").show();
+            $(".alert").hide();
+        },
+        error: function(e) {
+            $(".alert").show();
+            $(".diffloading").hide();
+        },
+        complete: function(e) {
+            $("button").removeAttr('disabled');
+            $(".diffloading").hide();
+            var diffdata = e.responseJSON['diff'];
+            var pricedata = e.responseJSON['prices'];
+            amount = e.responseJSON['amount'];
+
+            chart.Line(diffdata, options);
+            pricechart.Line(pricedata, options);
+        },
+    })
+}
+
+function daily() {
+    $.ajax({
+        url: "/graph_data",
+        type: "GET",
+        cache: false,
+        timeout: 2000,
+        dataType: "json",
+        data : {"amount": amount, 'unittime':'daily'},
+        beforeSend: function(e) {
+            $("button").attr("disabled","disabled");
+            $("#daily").addClass("disabled");
+            $("#hourly").removeClass("disabled");
+            $("#weekly").removeClass("disabled");
+            $(".diffloading").show();
+            $(".alert").hide();
+        },
+        error: function(e) {
+            $(".alert").show();
+            $(".diffloading").hide();            
+        },
+        complete: function(e) {
+            $("button").removeAttr('disabled');
+            $(".diffloading").hide();
+            var diffdata = e.responseJSON['diff'];
+            var pricedata = e.responseJSON['prices'];
+            amount = e.responseJSON['amount'];
+            chart.Line(diffdata, options);
+            pricechart.Line(pricedata, options);
+        },
+    })    
+}
+
+function weekly() {
+    $.ajax({
+        url: "/graph_data",
+        type: "GET",
+        cache: false,
+        timeout: 2000,
+        dataType: "json",
+        data : {"amount": amount, 'unittime':'weekly'},
+        beforeSend: function(e) {
+            $("button").attr("disabled","disabled");
+            $("#daily").removeClass("disabled");
+            $("#hourly").removeClass("disabled");
+            $("#weekly").addClass("disabled");            
+            $(".diffloading").show();
+            $(".alert").hide();
+        },
+        error: function(e) {
+            $(".alert").show();
+            $(".diffloading").hide();            
+        },
+        complete: function(e) {
+            $("button").removeAttr('disabled');
+            $(".diffloading").hide();
+            var diffdata = e.responseJSON['diff'];
+            var pricedata = e.responseJSON['prices'];
+            amount = e.responseJSON['amount'];
+            chart.Line(diffdata, options);
+            pricechart.Line(pricedata, options);
+        },
+    })    
+}
+
 $(document).ready(function() {
-    var coinprice = 0;
-    var campprice = 0;
-    var difference = 0;
-    var coinbasews = new WebSocket("ws://localhost:8888/socket_coinbase");
-    var campbxws = new WebSocket("ws://localhost:8888/socket_campbx");
+    $(".diffloading").hide();
+    $(".alert").hide();
+    hourly();
 
-    function diff() {
-        difference = parseFloat(coinprice) - parseFloat(campprice);
-        $("#diff").html("<h3>$"+difference.toFixed(2)+"</h3>");
-        $("title").text(difference.toFixed(2));
-    }
+    $("#back").on("click", function(e) {
+        e.preventDefault();
+        amount -= 1;
 
-    $("a").on("click", function(e) {
-        e.preventDefault(); 
+        var hourlyactive = $("#hourly").attr("class");
+        var dailyactive = $("#daily").attr("class");        
+        if (hourlyactive.match("btn disabled")) {
+            hourly();
+        }
+        else if (dailyactive.match("btn disabled")) {
+            daily();
+        }
+        else {
+            weekly();
+        }
     });
 
-    coinbasews.onopen = function() {
-        coinbasews.send("connect");
+    $("#forward").on("click", function(e) {
+        e.preventDefault();
+        if (amount < 0) {
+            amount += 1;
+        }
+
+        var hourlyactive = $("#hourly").attr("class");
+        var dailyactive = $("#daily").attr("class");        
+        if (hourlyactive.match("btn disabled")) {
+            hourly();
+        }
+        else if (dailyactive.match("btn disabled")) {
+            daily();
+        }
+        else {
+            weekly();
+        }
+    });
+
+    $("#daily").on("click", function(e) {
+        e.preventDefault();
+        amount = 0;
+        daily();
+    });
+
+    $("#hourly").on("click", function(e) {
+        e.preventDefault();
+        amount = 0;
+        hourly();
+    });
+
+    $("#weekly").on("click", function(e) {
+        e.preventDefault();
+        amount = 0;
+        weekly();
+    });
+
+    var mongows = new WebSocket("ws://localhost:8888/socket_mongo");
+
+    mongows.onopen = function() {
+        mongows.send("connect");
+    }
+
+    mongows.onmessage = function(e) {
+        price = $.parseJSON(e.data);
+        $("#coinbasesocket").text("$"+price['coinbase']);
+        $("#campbxsocket").text("$"+price['campbx']);
+        $("#diff").html("<h3>$"+price['diff'].toFixed(2)+"</h3>");
+        $("title").text(price['diff'].toFixed(2));
     };
 
-    coinbasews.onmessage = function(e) {
-        console.log(e.data);
-        coinprice = $.parseJSON(e.data)['amount']
-        $("#coinbasesocket").text("$"+coinprice);
-        diff();
-    }
-
-    campbxws.onopen = function() {
-        campbxws.send("connect");
-    }
-
-    campbxws.onmessage = function(e) {
-        console.log(e.data);
-        campprice = $.parseJSON(e.data)['Last Trade'];
-        $("#campbxsocket").text("$"+campprice);
-        diff();
-    }
 });
 </script>
 </html>
