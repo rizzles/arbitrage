@@ -61,7 +61,7 @@
             </div>
             <div class="row">
                 <div class="span12" style="margin-bottom: 10px;">
-                    <h2 style="color:#519B60">Historical price difference between exchanges</h2>
+                    <h2 style="color:#519B60">Biggest price difference between exchanges</h2>
                     <div class="btn-group">
                         <button class="btn" id="back"><i class="icon-backward"></i></button>
                         <button class="btn disabled" id="hourly">Hourly</button>
@@ -84,10 +84,12 @@
             <div class="row">
 
                 <div class="span12">
-                    <h2 style="color:#519B60">Historical buy price of exchanges</h2>                    
+                    <h2 style="color:#519B60">Maximum BTC buy price of exchanges</h2>                    
                     <canvas id="pricechart"></canvas>
-                    <div class="coinbaserose"></div> Coinbase.com buy price<br>
-                    <div class="campbxrose"></div> Campbx.com buy price    
+                    <div>
+                        <div class="coinbaserose"></div> Coinbase.com buy price<br>
+                        <div class="campbxrose"></div> Campbx.com buy price    
+                    </div>
                 </div>
             </div>
         </div>
@@ -161,29 +163,34 @@ var ctx = $("#diffchart").get(0).getContext("2d");
 var pricectx = $("#pricechart").get(0).getContext("2d");
 var amount = 0;
 var width = $(document).width();
+var plots = 0;
 if (width > 1200) {
     ctx.canvas.width = 1170;
     ctx.canvas.height = 600;
     pricectx.canvas.width = 1170;
     pricectx.canvas.height = 600;
+    plots = 24;
 }
 else if (width > 980) {
     ctx.canvas.width = 940;
     ctx.canvas.height = 500;
     pricectx.width = 940;
     pricectx.height = 500;
+    plots = 20;
 }
 else if (width > 768) {
     ctx.canvas.width = 724;
     ctx.canvas.height = 400;        
     pricectx.canvas.width = 724;
     pricectx.canvas.height = 400;
+    plots = 14;
 }
 else {
-    ctx.canvas.width = width-50;
+    ctx.canvas.width = width-25;
     ctx.canvas.height = 400;        
-    pricectx.canvas.width = width-50;
+    pricectx.canvas.width = width-25;
     pricectx.canvas.height = 400;
+    plots = 12;
 }
 var chart = new Chart(ctx); 
 var pricechart = new Chart(pricectx);   
@@ -196,7 +203,7 @@ function hourly() {
         cache: false,
         timeout: 2000,
         dataType: "json",
-        data : {"amount": amount, 'unittime':'hourly'},
+        data : {"amount": amount, 'unittime':'hourly', 'plots':plots},
         beforeSend: function(e) {
             $("button").attr("disabled","disabled");
             $("#hourly").addClass("disabled");
@@ -229,7 +236,7 @@ function daily() {
         cache: false,
         timeout: 2000,
         dataType: "json",
-        data : {"amount": amount, 'unittime':'daily'},
+        data : {"amount": amount, 'unittime':'daily', 'plots':plots},
         beforeSend: function(e) {
             $("button").attr("disabled","disabled");
             $("#daily").addClass("disabled");
@@ -261,7 +268,7 @@ function weekly() {
         cache: false,
         timeout: 2000,
         dataType: "json",
-        data : {"amount": amount, 'unittime':'weekly'},
+        data : {"amount": amount, 'unittime':'weekly', 'plots':plots},
         beforeSend: function(e) {
             $("button").attr("disabled","disabled");
             $("#daily").removeClass("disabled");
