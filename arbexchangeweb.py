@@ -190,6 +190,8 @@ class GraphHandler(BaseHandler):
     def get(self):
         amount = self.get_argument('amount', None)
         unittime = self.get_argument('unittime', None)
+        plots = self.get_argument('plots', None)
+        plots = int(plots)
         amount = int(amount)
 
         labels = []
@@ -212,22 +214,22 @@ class GraphHandler(BaseHandler):
             campbxdata.append(price['campbx'])
 
         if amount == 0:
-            labels = labels[-24:]
-            diffdata = diffdata[-24:]
-            coinbasedata = coinbasedata[-24:]
-            campbxdata = campbxdata[-24:]
+            labels = labels[-plots:]
+            diffdata = diffdata[-plots:]
+            coinbasedata = coinbasedata[-plots:]
+            campbxdata = campbxdata[-plots:]
         else:
-            if amount*24*2 < -len(labels):
-                labels = labels[-len(labels):-len(labels)+24]
-                diffdata = diffdata[-len(diffdata):-len(diffdata)+24]
-                coinbasedata = coinbasedata[-len(coinbasedata):-len(coinbasedata)+24]                
-                campbxdata = campbxdata[-len(campbxdata):-len(campbxdata)+24]                                
+            if amount*plots*2 < -len(labels):
+                labels = labels[-len(labels):-len(labels)+plots]
+                diffdata = diffdata[-len(diffdata):-len(diffdata)+plots]
+                coinbasedata = coinbasedata[-len(coinbasedata):-len(coinbasedata)+plots]
+                campbxdata = campbxdata[-len(campbxdata):-len(campbxdata)+plots]
                 amount += 1                
             else:
-                labels = labels[amount*24*2:amount*24]
-                diffdata = diffdata[amount*24*2:amount*24]
-                coinbasedata = coinbasedata[amount*24*2:amount*24]
-                campbxdata = campbxdata[amount*24*2:amount*24]                
+                labels = labels[amount*plots*2:amount*plots]
+                diffdata = diffdata[amount*plots*2:amount*plots]
+                coinbasedata = coinbasedata[amount*plots*2:amount*plots]
+                campbxdata = campbxdata[amount*plots*2:amount*plots]
 
         diff =  {
         "labels" : labels,
