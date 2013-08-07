@@ -22,13 +22,16 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/", MainHandler),
+            (r"/coinbase", CoinbaseHandler),
             (r"/test", TestHandler),
             (r"/socket_coinbase", SocketCoinbaseHandler),
             (r"/socket_campbx", SocketCampbxHandler),
             (r"/socket_mongo", SocketMongoHandler),
-            (r"/coinbase", CoinbaseHandler),
+            (r"/mongo", MongoHandler),
+            (r"/coinbase2", Coinbase2Handler),
             (r"/campbx", CampbxHandler),
-            (r"/graph_data", GraphHandler),
+            (r"/graph_data", MtgoxGraphHandler),
+            (r"/coinbase_graph_data", CoinbaseGraphHandler),
         ]
         settings = dict(
             cookie_secret="43oETzKXQAGaYdkL5gEmGeJJFuYh7EQnp2XdTP1o/Vo=",
@@ -66,6 +69,11 @@ class MainHandler(BaseHandler):
         self.render("arbexchange.html")
 
 
+class CoinbaseHandler(BaseHandler):
+    def get(self):
+        self.render("coinbase.html")
+
+
 class TestHandler(BaseHandler):
     def get(self):
         self.render("test.html")
@@ -90,7 +98,7 @@ class CampbxHandler(BaseHandler):
         self.render("campbx.html", price=json_data['Last Trade'])
 
 
-class CoinbaseHandler(BaseHandler):
+class Coinbase2Handler(BaseHandler):
     @tornado.gen.coroutine    
     @tornado.web.asynchronous 
     def get(self):
@@ -186,23 +194,39 @@ class SocketMongoHandler(tornado.websocket.WebSocketHandler, BaseHandler):
         logging.info("Mongo WebSocket closed")
 
 
-class GraphHandler(BaseHandler):
+class MongoHandler(BaseHandler):
+    def get(self):
+        coll = self.mongodb.price
+        price = coll.find().sort('_id',-1).limit(1)
+        for p in price:
+            del(p['_id'])
+            del(p['time'])
+            self.write(tornado.escape.json_encode(p))
+            return
+
+
+class MtgoxGraphHandler(BaseHandler):
     def get(self):
         amount = self.get_argument('amount', None)
         unittime = self.get_argument('unittime', None)
         plots = self.get_argument('plots', None)
         plots = int(plots)
         amount = int(amount)
+        end = False
 
         labels = []
         diffdata = []
+        diff2data = []
         coinbasedata = []
         campbxdata = []
+        mtgoxdata = []
 
-        if unittime == 'hourly':
-            coll = self.mongodb.hourly
+        if unittime == 'minute':
+            coll = self.mongodb.minute
+        elif unittime == 'hourly':
+            coll = self.mongodb.mtgoxhourly
         elif unittime == 'daily':
-            coll = self.mongodb.daily
+            coll = self.mongodb.mtgoxdaily
         else:
             coll = self.mongodb.weekly
 
@@ -210,27 +234,139 @@ class GraphHandler(BaseHandler):
         for price in prices:
             labels.append(price['stamp'])
             diffdata.append(price['diff'])
+            diff2data.append(price['diff2'])
             coinbasedata.append(price['coinbase'])
             campbxdata.append(price['campbx'])
+            if price['mtgox'] == 0:
+                mtgoxdata.append(price['coinbase'])
+            else:
+                mtgoxdata.append(price['mtgox'])
 
+
+        # first chart
         if amount == 0:
             labels = labels[-plots:]
             diffdata = diffdata[-plots:]
+            diff2data = diff2data[-plots:]
             coinbasedata = coinbasedata[-plots:]
             campbxdata = campbxdata[-plots:]
+            mtgoxdata = mtgoxdata[-plots:]
         else:
-            if amount*plots*2 < -len(labels):
+            # longer than the length of array
+            if amount*plots-plots < -len(labels):
                 labels = labels[-len(labels):-len(labels)+plots]
                 diffdata = diffdata[-len(diffdata):-len(diffdata)+plots]
+                diff2data = diff2data[-len(diff2data):-len(diff2data)+plots]
                 coinbasedata = coinbasedata[-len(coinbasedata):-len(coinbasedata)+plots]
                 campbxdata = campbxdata[-len(campbxdata):-len(campbxdata)+plots]
-                amount += 1                
+                mtgoxdata = mtgoxdata[-len(mtgoxdata):-len(mtgoxdata)+plots]
+                end = True
             else:
-                labels = labels[amount*plots*2:amount*plots]
-                diffdata = diffdata[amount*plots*2:amount*plots]
-                coinbasedata = coinbasedata[amount*plots*2:amount*plots]
-                campbxdata = campbxdata[amount*plots*2:amount*plots]
+                labels = labels[amount*plots-plots:amount*plots]
+                diffdata = diffdata[amount*plots-plots:amount*plots]
+                diff2data = diff2data[amount*plots-plots:amount*plots]
+                coinbasedata = coinbasedata[amount*plots-plots:amount*plots]
+                campbxdata = campbxdata[amount*plots-plots:amount*plots]
+                mtgoxdata = mtgoxdata[amount*plots-plots:amount*plots]
+    
+        diff =  {
+        "labels" : labels,
+        "datasets": [{
+            "fillColor" : "rgba(151,187,205,0.5)",
+            "strokeColor" : "rgba(151,187,205,1)",
+            "pointColor" : "rgba(151,187,205,1)",
+            "pointStrokeColor" : "#fff",
+            "data" : diff2data  
+        }]
+        }
 
+        prices =  {
+        "labels" : labels,
+        "datasets": [{
+            "fillColor" : "rgba(151,187,205,0.5)",
+            "strokeColor" : "rgba(151,187,205,1)",
+            "pointColor" : "rgba(151,187,205,1)",
+            "pointStrokeColor" : "#fff",
+            "data" : mtgoxdata  
+        },
+        {
+
+            "fillColor" : "rgba(220,220,220,0.5)",
+            "strokeColor" : "rgba(220,220,220,1)",
+            "pointColor" : "rgba(220,220,220,1)",
+            "pointStrokeColor" : "#fff",
+            "data" : campbxdata
+        }]
+        }
+
+        data = {'diff':diff, 'prices':prices, 'amount':amount, 'end':end}
+        self.write(tornado.escape.json_encode(data))
+
+
+class CoinbaseGraphHandler(BaseHandler):
+    def get(self):
+        amount = self.get_argument('amount', None)
+        unittime = self.get_argument('unittime', None)
+        plots = self.get_argument('plots', None)
+        plots = int(plots)
+        amount = int(amount)
+        end = False
+
+        labels = []
+        diffdata = []
+        diff2data = []
+        coinbasedata = []
+        campbxdata = []
+        mtgoxdata = []
+
+        if unittime == 'minute':
+            coll = self.mongodb.minute
+        elif unittime == 'hourly':
+            coll = self.mongodb.coinbasehourly
+        elif unittime == 'daily':
+            coll = self.mongodb.coinbasedaily
+        else:
+            coll = self.mongodb.weekly
+
+        prices = coll.find().sort('_id',1)
+        for price in prices:
+            labels.append(price['stamp'])
+            diffdata.append(price['diff'])
+            diff2data.append(price['diff2'])
+            coinbasedata.append(price['coinbase'])
+            campbxdata.append(price['campbx'])
+            if price['mtgox'] == 0:
+                mtgoxdata.append(price['coinbase'])
+            else:
+                mtgoxdata.append(price['mtgox'])
+
+
+        # first chart
+        if amount == 0:
+            labels = labels[-plots:]
+            diffdata = diffdata[-plots:]
+            diff2data = diff2data[-plots:]
+            coinbasedata = coinbasedata[-plots:]
+            campbxdata = campbxdata[-plots:]
+            mtgoxdata = mtgoxdata[-plots:]
+        else:
+            # longer than the length of array
+            if amount*plots-plots < -len(labels):
+                labels = labels[-len(labels):-len(labels)+plots]
+                diffdata = diffdata[-len(diffdata):-len(diffdata)+plots]
+                diff2data = diff2data[-len(diff2data):-len(diff2data)+plots]
+                coinbasedata = coinbasedata[-len(coinbasedata):-len(coinbasedata)+plots]
+                campbxdata = campbxdata[-len(campbxdata):-len(campbxdata)+plots]
+                mtgoxdata = mtgoxdata[-len(mtgoxdata):-len(mtgoxdata)+plots]
+                end = True
+            else:
+                labels = labels[amount*plots-plots:amount*plots]
+                diffdata = diffdata[amount*plots-plots:amount*plots]
+                diff2data = diff2data[amount*plots-plots:amount*plots]
+                coinbasedata = coinbasedata[amount*plots-plots:amount*plots]
+                campbxdata = campbxdata[amount*plots-plots:amount*plots]
+                mtgoxdata = mtgoxdata[amount*plots-plots:amount*plots]
+    
         diff =  {
         "labels" : labels,
         "datasets": [{
@@ -252,6 +388,7 @@ class GraphHandler(BaseHandler):
             "data" : coinbasedata  
         },
         {
+
             "fillColor" : "rgba(220,220,220,0.5)",
             "strokeColor" : "rgba(220,220,220,1)",
             "pointColor" : "rgba(220,220,220,1)",
@@ -260,7 +397,7 @@ class GraphHandler(BaseHandler):
         }]
         }
 
-        data = {'diff':diff, 'prices':prices, 'amount':amount}
+        data = {'diff':diff, 'prices':prices, 'amount':amount, 'end':end}
         self.write(tornado.escape.json_encode(data))
 
 
