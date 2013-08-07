@@ -20,31 +20,31 @@
 
             <div class="row">
                 <div class="span4">
-                    <h4>Campbx last trade price</h4>
+                    <h4>Campbx Ask</h4>
                     <div class="line span1"></div>
                     <div id="campbxsocket">
                         $0.00
                     </div>
                 </div>
                 <div class="span4">
-                    <h4>Coinbase buy price <small>(includes 1% fee)</small></h4>
+                    <h4>MtGox Bid</h4>
                     <div class="line span1"></div>
-                    <div id="coinbasesocket">
+                    <div id="mtgoxsocket">
                         $0.00
                     </div>
                 </div>
+
                 <div class="span4">
                     <div class="box">
                         <div class="box-header">
-                            <h6>ARBITRAGE</h6>
-                            <h3>Price Difference</h3>
+                            <h6>Price Difference</h6>
+                            <h3>CampBX - MtGox</h3>
                         </div>
                         <div class="box-body">
-                            <div id="diff">
+                            <div id="diff2">
                                 <h3>$0.00</h3>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -61,12 +61,13 @@
             </div>
             <div class="row">
                 <div class="span12" style="margin-bottom: 10px;">
-                    <h2 style="color:#519B60">Biggest price difference between exchanges</h2>
+                    <h2 style="color:#519B60">Price difference between exchanges</h2>
                     <div class="btn-group">
                         <button class="btn" id="back"><i class="icon-backward"></i></button>
+                        <button class="btn" id="minute">Minute</button>
                         <button class="btn disabled" id="hourly">Hourly</button>
                         <button class="btn" id="daily">Daily</button>
-                        <button class="btn" id="weekly">Weekly</button>
+                        <!--<button class="btn" id="weekly">Weekly</button>-->
                         <button class="btn" id="forward"><i class="icon-forward"></i></button>
                     </div>
                     <span class="diffloading"><i class="icon-spinner icon-spin icon-large"></i></span>
@@ -84,11 +85,11 @@
             <div class="row">
 
                 <div class="span12">
-                    <h2 style="color:#519B60">Maximum BTC buy price of exchanges</h2>                    
+                    <h2 style="color:#519B60">BTC prices</h2>                    
                     <canvas id="pricechart"></canvas>
                     <div>
-                        <div class="coinbaserose"></div> Coinbase.com buy price<br>
-                        <div class="campbxrose"></div> Campbx.com buy price    
+                        <div class="coinbaserose"></div> MtGox Bid Price<br>
+                        <div class="campbxrose"></div> Campbx Ask Price
                     </div>
                 </div>
             </div>
@@ -164,6 +165,8 @@ var pricectx = $("#pricechart").get(0).getContext("2d");
 var amount = 0;
 var width = $(document).width();
 var plots = 0;
+var end = false;
+
 if (width > 1200) {
     ctx.canvas.width = 1170;
     ctx.canvas.height = 600;
@@ -195,8 +198,41 @@ else {
 var chart = new Chart(ctx); 
 var pricechart = new Chart(pricectx);   
 
+function minute() {
+    $.ajax({
+        url: "/graph_data",
+        type: "GET",
+        cache: false,
+        timeout: 8000,
+        dataType: "json",
+        data : {"amount": amount, 'unittime':'minute', 'plots':plots},
+        beforeSend: function(e) {
+            $("button").attr("disabled","disabled");
+            $("#minute").addClass("disabled");
+            $("#hourly").removeClass("disabled");
+            $("#daily").removeClass("disabled");
+            $("#weekly").removeClass("disabled");
+            $(".diffloading").show();
+            $(".alert").hide();
+        },
+        error: function(e) {
+            $(".alert").show();
+            $(".diffloading").hide();
+        },
+        complete: function(e) {
+            $("button").removeAttr('disabled');
+            $(".diffloading").hide();
+            var diffdata = e.responseJSON['diff'];
+            var pricedata = e.responseJSON['prices'];
+            amount = e.responseJSON['amount'];
+            end = e.responseJSON['end'];
+            chart.Line(diffdata, options);
+            pricechart.Line(pricedata, options);
+        },
+    })
+}
+
 function hourly() {
-    console.log(amount);
     $.ajax({
         url: "/graph_data",
         type: "GET",
@@ -206,6 +242,7 @@ function hourly() {
         data : {"amount": amount, 'unittime':'hourly', 'plots':plots},
         beforeSend: function(e) {
             $("button").attr("disabled","disabled");
+            $("#minute").removeClass("disabled");
             $("#hourly").addClass("disabled");
             $("#daily").removeClass("disabled");
             $("#weekly").removeClass("disabled");
@@ -222,7 +259,7 @@ function hourly() {
             var diffdata = e.responseJSON['diff'];
             var pricedata = e.responseJSON['prices'];
             amount = e.responseJSON['amount'];
-
+            end = e.responseJSON['end'];
             chart.Line(diffdata, options);
             pricechart.Line(pricedata, options);
         },
@@ -241,6 +278,7 @@ function daily() {
             $("button").attr("disabled","disabled");
             $("#daily").addClass("disabled");
             $("#hourly").removeClass("disabled");
+            $("#minute").removeClass("disabled");
             $("#weekly").removeClass("disabled");
             $(".diffloading").show();
             $(".alert").hide();
@@ -255,7 +293,9 @@ function daily() {
             var diffdata = e.responseJSON['diff'];
             var pricedata = e.responseJSON['prices'];
             amount = e.responseJSON['amount'];
+            end = e.responseJSON['end'];
             chart.Line(diffdata, options);
+
             pricechart.Line(pricedata, options);
         },
     })    
@@ -273,6 +313,7 @@ function weekly() {
             $("button").attr("disabled","disabled");
             $("#daily").removeClass("disabled");
             $("#hourly").removeClass("disabled");
+            $("#minute").removeClass("disabled");
             $("#weekly").addClass("disabled");            
             $(".diffloading").show();
             $(".alert").hide();
@@ -287,8 +328,29 @@ function weekly() {
             var diffdata = e.responseJSON['diff'];
             var pricedata = e.responseJSON['prices'];
             amount = e.responseJSON['amount'];
+            end = e.responseJSON['end'];
             chart.Line(diffdata, options);
             pricechart.Line(pricedata, options);
+        },
+    })    
+}
+
+function mongo_price() {
+    $.ajax({
+        url: "/mongo",
+        type: "GET",
+        cache: false,
+        timeout: 2000,
+        dataType: "json",
+
+        complete: function(e) {
+            price = e.responseJSON;
+            $("#coinbasesocket").text("$"+price['coinbase']);
+            $("#campbxsocket").text("$"+price['campbx']);
+            $("#mtgoxsocket").text("$"+price['mtgox'].toFixed(2));
+            $("#diff").html("<h3>$"+price['diff'].toFixed(2)+"</h3>");
+            $("#diff2").html("<h3>$"+price['diff2'].toFixed(2)+"</h3>");
+            $("title").text("$"+price['diff2'].toFixed(2));
         },
     })    
 }
@@ -297,14 +359,22 @@ $(document).ready(function() {
     $(".diffloading").hide();
     $(".alert").hide();
     hourly();
+    mongo_price();
 
     $("#back").on("click", function(e) {
         e.preventDefault();
-        amount -= 1;
 
+        if (!end) {
+            amount -= 1;
+        }
+
+        var minuteactive = $("#minute").attr("class");
         var hourlyactive = $("#hourly").attr("class");
         var dailyactive = $("#daily").attr("class");        
-        if (hourlyactive.match("btn disabled")) {
+        if (minuteactive.match("btn disabled")) {
+            minute();
+        }
+        else if (hourlyactive.match("btn disabled")) {
             hourly();
         }
         else if (dailyactive.match("btn disabled")) {
@@ -321,9 +391,13 @@ $(document).ready(function() {
             amount += 1;
         }
 
+	var minuteactive = $("#minute").attr("class");
         var hourlyactive = $("#hourly").attr("class");
-        var dailyactive = $("#daily").attr("class");        
-        if (hourlyactive.match("btn disabled")) {
+        var dailyactive = $("#daily").attr("class");  
+	if (minuteactive.match("btn disabled")) {
+	    minute();
+	}
+        else if (hourlyactive.match("btn disabled")) {
             hourly();
         }
         else if (dailyactive.match("btn disabled")) {
@@ -332,6 +406,12 @@ $(document).ready(function() {
         else {
             weekly();
         }
+    });
+
+    $("#minute").on("click", function(e) {
+        e.preventDefault();
+        amount = 0;
+        minute();
     });
 
     $("#daily").on("click", function(e) {

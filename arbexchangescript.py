@@ -27,37 +27,123 @@ collection = mongodb.price
 
 coinbase_url = 'https://coinbase.com/api/v1/prices/sell'
 campbx_url = 'http://CampBX.com/api/xticker.php'
+mtgox_url = 'https://data.mtgox.com/api/1/BTCUSD/ticker'
 
 campbx_price = 0.00
 coinbase_price = 0.00
+mtgox_price = 0.00
 difference = 0.00
+difference2 = 0.00
 
 
 def find_diff():
     print "Finding price difference..."
+    minutediff = {}
     hourdiff = {}
     daydiff = {}
     prices = collection.find().sort('_id',1)
+
+    minuteprices = mongodb.minute.find().sort('_id',1)
+    minutecheck = {}
+    for m in minuteprices:
+        minutecheck[m['stamp']] = m['diff']
+
+    hourprices = mongodb.coinbasehourly.find().sort('_id',1)
+    hour2prices = mongodb.mtgoxhourly.find().sort('_id',1)
+    hourcheck = {}
+    hour2check = {}
+    for m in hourprices:
+        hourcheck[m['stamp']] = m['diff']
+    for m in hour2prices:
+        hour2check[m['stamp']] = m['diff2']
+
+    dailyprices = mongodb.coinbasedaily.find().sort('_id',1)
+    daily2prices = mongodb.mtgoxdaily.find().sort('_id',1)
+    dailycheck = {}
+    daily2check = {}
+    for m in dailyprices:
+        dailycheck[m['stamp']] = m['diff']
+    for m in daily2prices:
+        daily2check[m['stamp']] = m['diff2']
+
+    hourhigh = {}
+    dayhigh = {}
+    hour2high = {}
+    day2high = {}
+
     for price in prices:
+        if not price.has_key('diff2'):
+            continue
 
+        if not price.has_key('mtgox'):
+            price['mtgox'] = 0.00
+
+        if price['time'].minute < 10:
+            minute = "0%s"%price['time'].minute
+        else:
+            minute = "%s"%price['time'].minute
+
+
+        # minute data
+        minutestamp = "%s %s %s:%s"%(months[price['time'].month], days[price['time'].day], price['time'].hour, minute)
+        minutediff[minutestamp] = {'diff': price['diff'], 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':minutestamp, 'diff2':price['diff2'], 'mtgox':price['mtgox']}
+        if not minutecheck.has_key(minutestamp):
+            mongodb.minute.update({'stamp':minutestamp}, minutediff[minutestamp], True)
+
+
+
+        # hourly data
         hourstamp = "%s %s %s:00"%(months[price['time'].month], days[price['time'].day], price['time'].hour)
-        if not hourdiff.has_key(hourstamp):
-            hourdiff[hourstamp] = {'diff': 0.00, 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':hourstamp}
-            mongodb.hourly.update({'hourstamp':hourstamp}, hourdiff[hourstamp], False)
+        if not hourhigh.has_key(hourstamp):
+            hourhigh[hourstamp] = price['diff']
+        if not hour2high.has_key(hourstamp):
+            hour2high[hourstamp] = price['diff2']
+        hourdiff[hourstamp] = {'diff': price['diff'], 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':hourstamp, 'diff2':price['diff2'], 'mtgox':price['mtgox']}
 
+        # hourly high for campbx-coinbase
+        if not hourcheck.has_key(hourstamp):
+            mongodb.coinbasehourly.update({'stamp':hourstamp}, hourdiff[hourstamp], True)
+            hourhigh[hourstamp] = price['diff']
+        else:
+            if price['diff'] > hourhigh[hourstamp]:
+                hourhigh[hourstamp] = price['diff']
+                mongodb.coinbasehourly.update({'stamp':hourstamp}, hourdiff[hourstamp], True)
+
+        # hourly high for campbx-mtgox
+        if not hour2check.has_key(hourstamp):
+            mongodb.mtgoxhourly.update({'stamp':hourstamp}, hourdiff[hourstamp], True)
+            hour2high[hourstamp] = price['diff2']
+        else:
+            if price['diff2'] > hour2high[hourstamp]:
+                hour2high[hourstamp] = price['diff2']
+                mongodb.mtgoxhourly.update({'stamp':hourstamp}, hourdiff[hourstamp], True)
+
+
+
+        # daily data
         daystamp = "%s %s"%(months[price['time'].month], days[price['time'].day])
-        if not daydiff.has_key(daystamp):
-            daydiff[daystamp] = {'diff': 0.00, 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':daystamp}
-            mongodb.daily.update({'daystamp':daystamp}, daydiff[daystamp], False)
+        if not dayhigh.has_key(daystamp):
+            dayhigh[daystamp] = price['diff']
+        if not day2high.has_key(daystamp):
+            day2high[daystamp] = price['diff2']
+        daydiff[daystamp] = {'diff': price['diff'], 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':daystamp, 'diff2':price['diff2'], 'mtgox':price['mtgox']}
+        
+        if not dailycheck.has_key(daystamp):
+            mongodb.coinbasedaily.update({'stamp':daystamp}, daydiff[daystamp], True)
+            dayhigh[daystamp] = price['diff']
+        else:
+            if price['diff'] > dayhigh[daystamp]:
+                dayhigh[daystamp] = price['diff']
+                mongodb.coinbasedaily.update({'stamp':daystamp}, daydiff[daystamp], True)
 
+        if not daily2check.has_key(daystamp):
+            mongodb.mtgoxdaily.update({'stamp':daystamp}, daydiff[daystamp], True)
+            day2high[daystamp] = price['diff2']
+        else:
+            if price['diff2'] > day2high[daystamp]:
+                day2high[daystamp] = price['diff2']
+                mongodb.mtgoxdaily.update({'stamp':daystamp}, daydiff[daystamp], True)
 
-        if price['diff'] > hourdiff[hourstamp]['diff']:
-            hourdiff[hourstamp] = {'diff': price['diff'], 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':hourstamp}
-            mongodb.hourly.update({'stamp':hourstamp}, hourdiff[hourstamp], True)
-
-        if price['diff'] > daydiff[daystamp]['diff']:
-            daydiff[daystamp] = {'diff': price['diff'], 'campbx':price['campbx'], 'coinbase':price['coinbase'], 'stamp':daystamp}
-            mongodb.daily.update({'stamp':daystamp}, daydiff[daystamp], True)
 
 
 while True:
@@ -68,10 +154,22 @@ while True:
     print ""
     time.sleep(TIMEOUT)
 
-    find_diff()
-
     coinbase_http_client = tornado.httpclient.HTTPClient()
     campbx_http_client = tornado.httpclient.HTTPClient()    
+    mtgox_http_client = tornado.httpclient.HTTPClient()    
+
+
+    # campbx price
+    try:
+        campbx_response = campbx_http_client.fetch(campbx_url)
+        print "Campbx:", campbx_response.body
+        campbx_price = tornado.escape.json_decode(campbx_response.body)
+        campbx_price = float(campbx_price['Best Ask'])
+    except Exception as e:
+        logging.error("Error encountered when getting campbx price:", e)
+        continue
+    finally:
+        campbx_http_client.close()
 
     # coinbase price
     try:
@@ -85,21 +183,24 @@ while True:
     finally:
         coinbase_http_client.close()
 
-    # campbx price
+
+    # mtgox price
     try:
-        campbx_response = campbx_http_client.fetch(campbx_url)
-        print "Campbx:", campbx_response.body
-        campbx_price = tornado.escape.json_decode(campbx_response.body)
-        campbx_price = float(campbx_price['Last Trade'])
+        mtgox_response = mtgox_http_client.fetch(mtgox_url)
+        mtgox_price = tornado.escape.json_decode(mtgox_response.body)
+        print "MtGox:", mtgox_price['return']
+        mtgox_price = float(mtgox_price['return']['buy']['value'])
     except Exception as e:
-        logging.error("Error encountered when getting campbx price:", e)
+        logging.error("Error encountered getting mtgox price:", e)
         continue
     finally:
-        campbx_http_client.close()
+        mtgox_http_client.close()
 
     difference = coinbase_price - campbx_price
+    difference2 = mtgox_price - campbx_price
 
-    price_data = {'coinbase':coinbase_price, 'campbx':campbx_price, 'diff':difference, 'time':datetime.datetime.now()}
-    print price_data
+    price_data = {'coinbase':coinbase_price, 'campbx':campbx_price, 'diff':difference, 'time':datetime.datetime.now(), 'mtgox':mtgox_price, 'diff2':difference2}
+    print "Data: ",price_data
     collection.insert(price_data)
         
+    find_diff()
