@@ -9,6 +9,7 @@ import uuid
 import urllib2
 import locale
 import time
+import decimal
 
 import tornado.escape
 import tornado.httpclient
@@ -17,17 +18,17 @@ import btceapi
 
 btc_e_fee = 0.002
 btc_e_fee2 = 0.005
-amount = 1.0
-executetrade = 1.015
+amount = 1.00
+executetrade = 1.013
+SLEEP = 8
 
 logging.basicConfig(level=logging.INFO)
 http_client = tornado.httpclient.HTTPClient()
 
 
 while (True):
-    logging.info("Sleeping 5 seconds")
-    time.sleep(5)
-
+    logging.info("Sleeping %s seconds"%SLEEP)
+    time.sleep(SLEEP)
 
     # Branch to check if current orders are too old
     handler = btceapi.KeyHandler('key_file')
@@ -57,7 +58,7 @@ while (True):
 
 
     # Check if to many open orders
-    if len(orders) > 19:
+    if len(orders) > 15:
         print "Way too many open orders. Continuing."
         continue
 
@@ -134,15 +135,17 @@ while (True):
     usd2ltc= (btc2usd / ltc_usd['ticker']['sell'])* (1-btc_e_fee) # buy LTC for USD
     ltc2btc= (usd2ltc * ltc_btc['ticker']['buy'])* (1-btc_e_fee) # sell LTC for BTC
 
+    print "ARB1", ltc2btc
     if ltc2btc > executetrade:
         print "Executing ARB1 trade"
+        """
         handler = btceapi.KeyHandler('key_file')
 
         # sell BTC
         for key in handler.getKeys():
             t = btceapi.TradeAPI(key, handler=handler)
             rate = btc_usd['ticker']['buy']
-            r = t.trade(pair="btc_usd", trade_type="sell", rate=rate, amount=amount)
+            r = t.trade(pair="btc_usd", trade_type="sell", rate=str(rate), amount=str(amount))
             total = (amount * rate) * (1-btc_e_fee)
             print "BTC_USD"
             print "price", rate
@@ -154,7 +157,7 @@ while (True):
             t = btceapi.TradeAPI(key, handler=handler)
             rate = ltc_usd['ticker']['sell']
             buy = (total / rate)
-            r = t.trade(pair="ltc_usd", trade_type="buy", rate=rate, amount=buy)
+            r = t.trade(pair="ltc_usd", trade_type="buy", rate=str(rate), amount=str(buy))
             total = buy * (1-btc_e_fee)
             print ""
             print "LTC_USD"
@@ -166,7 +169,7 @@ while (True):
         for key in handler.getKeys():
             t = btceapi.TradeAPI(key, handler=handler)
             rate = ltc_btc['ticker']['buy']
-            r = t.trade(pair="ltc_btc", trade_type="sell", rate=rate, amount=total)
+            r = t.trade(pair="ltc_btc", trade_type="sell", rate=str(rate), amount=str(total))
             total = (total * rate) * (1-btc_e_fee)
             print ""
             print "LTC_BTC"
@@ -175,23 +178,25 @@ while (True):
             handler.setNextNonce(key, handler.getNextNonce(key))
             
         handler.save('key_file')
-        #sys.exit()
-
+        """
+        sys.exit()
 
     # [ARB2] BTC 2 LTC 2 USD 2 BTC
     btc2ltc= (amount / ltc_btc['ticker']['sell'])* (1-btc_e_fee) # buy LTC for BTC
     ltc2usd= (btc2ltc * ltc_usd['ticker']['buy'])* (1-btc_e_fee) # sell LTC for USD
     usd2btc= (ltc2usd / btc_usd['ticker']['sell'])* (1-btc_e_fee) # buy LTC for USD
 
+    print "ARB2", usd2btc
     if usd2btc > executetrade:
         print "Executing ARB2 trade"
+        """
         handler = btceapi.KeyHandler('key_file')
         # buy LTC
         for key in handler.getKeys():
             t = btceapi.TradeAPI(key, handler=handler)
             rate = ltc_btc['ticker']['sell']
             buy = (amount / rate)
-            r = t.trade(pair="ltc_btc", trade_type="buy", rate=rate, amount=buy)
+            r = t.trade(pair="ltc_btc", trade_type="buy", rate=str(rate), amount=str(buy))
             total = buy * (1-btc_e_fee)
             print "LTC_BTC"
             print "price", rate
@@ -202,7 +207,7 @@ while (True):
         for key in handler.getKeys():
             t = btceapi.TradeAPI(key, handler=handler)
             rate = ltc_usd['ticker']['buy']
-            r = t.trade(pair="ltc_usd", trade_type="sell", rate=rate, amount=total)
+            r = t.trade(pair="ltc_usd", trade_type="sell", rate=str(rate), amount=str(total))
             total = (total * rate) * (1-btc_e_fee)
             print ""
             print "LTC_USD"
@@ -215,7 +220,7 @@ while (True):
             t = btceapi.TradeAPI(key, handler=handler)
             rate = btc_usd['ticker']['sell']
             buy = (total / rate)
-            r = t.trade(pair="btc_usd", trade_type="buy", rate=rate, amount=buy)
+            r = t.trade(pair="btc_usd", trade_type="buy", rate=str(rate), amount=str(buy))
             total = buy * (1-btc_e_fee)
             print ""
             print "BTC_USD"
@@ -224,9 +229,12 @@ while (True):
             handler.setNextNonce(key, handler.getNextNonce(key))
 
         handler.save('key_file')
-        #sys.exit()
+        """
+        sys.exit()
 
     continue
+
+
     """
     # [ARB3] BTC 2 EUR 2 USD 2 BTC
     btc2eur= (amount * btc_eur['ticker']['sell'])* (1-btc_e_fee) # sell BTC for EUR
